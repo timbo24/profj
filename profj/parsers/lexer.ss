@@ -22,13 +22,13 @@
   
   (define-empty-tokens Operators
                        (PIPE OR OREQUAL
-                             =	> < !	~	?	:
+                             =	!	~	?	:
                              ==	<=	>=	!=	&&	++	--
                              +	-	*	/	&	^	%	<< >> >>>
                              +=	-=	*=	/=	&=	^=	%=	<<=	>>=	>>>=))
   
   (define-empty-tokens Separators
-                       (O_PAREN C_PAREN O_BRACE C_BRACE O_BRACKET C_BRACKET SEMI_COLON PERIOD COMMA))
+                       (O_A_BRACKET C_A_BRACKET O_PAREN C_PAREN O_BRACE C_BRACE O_BRACKET C_BRACKET SEMI_COLON PERIOD COMMA))
   
   (define-empty-tokens EmptyLiterals (NULL_LIT TRUE_LIT FALSE_LIT EOF))
   
@@ -156,7 +156,7 @@
                           (re:: #\\ (re:/ "07"))))
    
    ;; 3.12
-   (Operator (re:or "="	">" "<" "!"	"~"	"?"	":"
+   (Operator (re:or "="	"!"	"~"	"?"	":"
                     "=="	"<="	">="	"!="	"&&" "||"	"++"	"--"
                     "+"	"-"	"*"	"/"	"&" "|"	"^"	"%"	"<<" ">>" ">>>"
                     "+="	"-="	"*="	"/="	"&="	"|="	"^="	"%="	"<<="	">>="	">>>=")))
@@ -256,6 +256,8 @@
 
      
      ;; 3.11
+     ("<" (token-O_A_BRACKET))
+     (">" (token-C_A_BRACKET))
      ("(" (token-O_PAREN))
      (")" (token-C_PAREN))
      ("{" (token-O_BRACE))
