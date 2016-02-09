@@ -391,10 +391,10 @@
       
       (RelationalExpression
        [(ShiftExpression) $1]
-       [(ShiftExpression < ShiftExpression)
-        (make-bin-op #f (build-src 3) '< $1 $3 (build-src 2 2))]		
-       [(RelationalExpression > ShiftExpression)
-	(make-bin-op #f (build-src 3) '> $1 $3 (build-src 2 2))]	
+       [(ShiftExpression O_A_BRACKET ShiftExpression)
+        (make-bin-op #f (build-src 3) 'O_A_BRACKET $1 $3 (build-src 2 2))]		
+       [(RelationalExpression C_A_BRACKET ShiftExpression)
+	(make-bin-op #f (build-src 3) 'C_A_BRACKET $1 $3 (build-src 2 2))]	
        [(RelationalExpression <= ShiftExpression)
 	(make-bin-op #f (build-src 3) '<= $1 $3 (build-src 2 2))]	
        [(RelationalExpression >= ShiftExpression)

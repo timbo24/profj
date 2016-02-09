@@ -166,7 +166,7 @@
   
   ;Operators
   (define (bin-operator? token)
-    (memq (get-token-name token) `(PIPE OR > < == <= >= != && + - * / & ^ % << >> >>>)))
+    (memq (get-token-name token) `(PIPE OR O_A_BRACKET C_A_BRACKET == <= >= != && + - * / & ^ % << >> >>>)))
   (define (unary-end? token)
     (memq (get-token-name token) `(++ --)))
   (define (if-exp? token)
@@ -181,6 +181,8 @@
     (and (symbol? token) (memq token `(= += -= *= /= &= ^= %= <<= >>= >>>=))))
   
   ;Separators
+  (define-token? o-a-bracket? 'O_A_BRACKET)
+  (define-token? c-a-bracket? 'C_A_BRACKET)
   (define-token? o-paren? 'O_PAREN)
   (define-token? c-paren? 'C_PAREN)
   (define-token? o-brace? 'O_BRACE)
@@ -197,9 +199,9 @@
     (or (open-separator? tok) (close-separator? tok)
         (memq (get-token-name tok) `(SEMI_COLON PERIOD COMMA))))
   (define (open-separator? tok)
-    (memq (get-token-name tok) `(O_PAREN O_BRACE O_BRACKET)))
+    (memq (get-token-name tok) `(O_A_BRACKET O_PAREN O_BRACE O_BRACKET)))
   (define (close-separator? tok)
-    (memq (get-token-name tok) `(C_PAREN C_BRACE C_BRACKET)))
+    (memq (get-token-name tok) `(C_A_BRACKET C_PAREN C_BRACE C_BRACKET)))
   
   ;top-level keywords
   (define-token? package-token? 'package)
