@@ -573,43 +573,41 @@
            #;(display (field-type-spec (car x)))
            [else (print-some-shit (cdr x))]))))
 
-  (define (change members type)
-    (if (null? members)
-        '()
-         (cond
-           [(field? (car members))
-             (begin
-               #;(display "\n Field------------\n")
-               (if (equal? (id-string (name-id (type-spec-name (field-type-spec (car members))))) type)
-                   (set-id-string! (name-id (type-spec-name (field-type-spec (car members)))) "Object")
-                   (void)
-                        #;(display "")
-                        #;(display (name-id (type-spec-name (field-type-spec (car members))))))
-                    (change (cdr members) type))]
-           ;; methods -----------
-           [(method? (car members))
-            (begin
-              #;(display "\n Method------------\n")
-              #;(write (car members))
-              ;; catch a couple cases, void return and constructor
-              (begin (if (and (name? (type-spec-name (method-type (car members))))
-                              (equal? (id-string (name-id (type-spec-name (method-type (car members))))) type))
-                         (set-id-string! (name-id (type-spec-name (method-type (car members)))) "Object")
-                         '())
-                     #;(display "\n\n*******PARMS!!!!!!!!!!! ________ \n \n \n")
-                     (if (null? (method-parms (car members)))
-                         '()
-                         (map (λ (parm) (if (equal? (id-string (name-id (type-spec-name (var-decl-type-spec parm)))) type)
-                                            (set-id-string! (name-id (type-spec-name (var-decl-type-spec  parm))) "Object")
-                                            '()))
-                              (method-parms (car members))))
-                     (change (cdr members) type)))]
-             #;(display (field-type-spec (car x)))
-             [else (change (cdr members) type)])))
+  (define (get-type-id type-obj)
+    (name-id (type-spec-name type-obj)))
+  
+  (define (get-field-id field)
+    (get-type-id (field-type-spec field)))
 
-  (define (change-to-obj class type)
-    (let* ((members (def-members class)))
-      (change members type)))
+  (define (get-return-id method)
+    (get-type-id (method-type method)))
+
+  (define (get-parm-id parm)
+    (get-type-id (var-decl-type-spec parm)))
+
+  (define (has-return-type? method)
+    (name? (type-spec-name (method-type method))))
+
+  ;; 1.5 replace generic class declaration instances of parametric parameters with
+  ;; Object type
+  (define (generic-to-object members type)
+    (unless (null? members)
+      (let ((member (car members)))
+        (cond
+          [(field? member) (when (equal? (id-string (get-field-id member)) type)
+                             (set-id-string! (get-field-id member) "Object"))
+                           (generic-to-object (cdr members) type)]
+          [(method? member) (when (and (has-return-type? member)
+                                              (equal? (id-string (get-return-id member)) type))
+                              (set-id-string! (get-return-id  member) "Object"))                                   
+                            (let ((parms (method-parms member)))
+                              (unless (null? parms)
+                                (for-each (λ (parm)
+                                            (when (equal? (id-string (get-parm-id parm)) type)
+                                              (set-id-string! (get-parm-id  parm) "Object")))
+                                          parms)))
+                            (generic-to-object (cdr members) type)]
+          [else (generic-to-object (cdr members) type)]))))
       
       
       
@@ -617,11 +615,6 @@
   ;; process-class: class-def (list string) type-records bool bool symbol -> class-record
   (define (process-class class package-name type-recs look-in-table? put-in-table? level)
     #;(display "call to process-class\n")
-    #;(display (car (header-type-parms (def-header class))))
-    (if (null? (header-type-parms (def-header class)))
-        (void)
-        (let ((types (map (λ (type-parm) (id-string (name-id (type-spec-name type-parm)))) (header-type-parms (def-header class)))))
-          (map (λ (type) (change-to-obj class type)) types)))
     #;(display (header-type-parms (def-header class)))
     (let* ((info (def-header class))
            (cname (cons (id-string (header-id info)) package-name)))
@@ -656,6 +649,14 @@
                                        (make-req (car name-list) (cdr name-list))))
                                  (cons super-name (map name->list (header-implements info)))))
                       (old-loc (send type-recs get-location)))
+                 ;; handling generics 
+                 (unless (null? (header-type-parms (def-header class)))
+                   (let ((types (map (λ (type-parm)
+                                       (id-string (name-id (type-spec-name type-parm))))
+                                     (header-type-parms (def-header class)))))
+                         (for-each (λ (type)
+                                     (generic-to-object members type))
+                                   types)))
                  (set! reqs
                        (remove-dup-reqs
                         (append (get-method-reqs (class-record-methods super-record))
