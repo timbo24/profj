@@ -155,7 +155,7 @@
 
   ;build-interactions-info: ast location type-records -> void
   (define (build-interactions-info prog level loc type-recs)
-    (display "call to build-interactinos-info\n")
+    #;(display "call to build-interactinos-info\n")
     (build-info-location loc)
     (send type-recs give-interaction-execution-names)
     (if (list? prog)
@@ -562,7 +562,7 @@
     (if (null? x)
         '()
         (begin
-         (display "\n------------\n")
+         #;(display "\n------------\n")
          (cond
            [(field? (car x))
              (begin #;(set-id-string! (name-id (type-spec-name (field-type-spec (car x)))) "Object")
@@ -579,23 +579,24 @@
          (cond
            [(field? (car members))
              (begin
-               (display "\n Field------------\n")
+               #;(display "\n Field------------\n")
                (if (equal? (id-string (name-id (type-spec-name (field-type-spec (car members))))) type)
-                        (set-id-string! (name-id (type-spec-name (field-type-spec (car members)))) "Object")
-                        (display "")
+                   (set-id-string! (name-id (type-spec-name (field-type-spec (car members)))) "Object")
+                   (void)
+                        #;(display "")
                         #;(display (name-id (type-spec-name (field-type-spec (car members))))))
                     (change (cdr members) type))]
            ;; methods -----------
            [(method? (car members))
             (begin
-              (display "\n Method------------\n")
-              (write (car members))
+              #;(display "\n Method------------\n")
+              #;(write (car members))
               ;; catch a couple cases, void return and constructor
               (begin (if (and (name? (type-spec-name (method-type (car members))))
                               (equal? (id-string (name-id (type-spec-name (method-type (car members))))) type))
                          (set-id-string! (name-id (type-spec-name (method-type (car members)))) "Object")
                          '())
-                     (display "\n\n*******PARMS!!!!!!!!!!! ________ \n \n \n")
+                     #;(display "\n\n*******PARMS!!!!!!!!!!! ________ \n \n \n")
                      (if (null? (method-parms (car members)))
                          '()
                          (map (λ (parm) (if (equal? (id-string (name-id (type-spec-name (var-decl-type-spec parm)))) type)
@@ -615,13 +616,13 @@
   
   ;; process-class: class-def (list string) type-records bool bool symbol -> class-record
   (define (process-class class package-name type-recs look-in-table? put-in-table? level)
-    (display "call to process-class\n")
+    #;(display "call to process-class\n")
     #;(display (car (header-type-parms (def-header class))))
     (if (null? (header-type-parms (def-header class)))
-        (display "we good \n")
+        (void)
         (let ((types (map (λ (type-parm) (id-string (name-id (type-spec-name type-parm)))) (header-type-parms (def-header class)))))
           (map (λ (type) (change-to-obj class type)) types)))
-    (display (header-type-parms (def-header class)))
+    #;(display (header-type-parms (def-header class)))
     (let* ((info (def-header class))
            (cname (cons (id-string (header-id info)) package-name)))
       (send type-recs set-location! (def-file class))
@@ -1114,7 +1115,7 @@
   
   ;find-member: (U field-record method-record) (list member) symbol type-records -> member
   (define (find-member member-record members level type-recs)
-    (display "call to find-member\n")
+    #;(display "call to find-member\n")
     (when (null? members)
       (printf "~a~n" member-record)
       (error 'internal-error "Find-member given a member that is not contained in the member list"))
@@ -1151,7 +1152,7 @@
  
   ;valid-method-sigs? (list method-record) (list member) symbol type-records -> bool
   (define (valid-method-sigs? methods members level type-recs)
-    (display "call to valid-method-sigs?\n")
+    #;(display "call to valid-method-sigs?\n")
     (or (null? methods)
         (and (equal? (method-record-name (car methods)) 
                      (method-record-class (car methods)))
@@ -1303,7 +1304,7 @@
              (check-current-methods (cdr records) methods members level type-recs))))
   
   (define (check-for-conflicts methods record members level type-recs)
-    (display "call to check-for-conflicts\n")
+    #;(display "call to check-for-conflicts\n")
     (or (null? methods)
         (and (method-conflicts? (car methods)
                                 (class-record-methods record)
@@ -1458,7 +1459,7 @@
               (implements-all? (cdr inherit-methods) methods name level)))))
   
   (define (no-abstract-methods methods members level type-recs)
-    (display "call to no-abstract-methods\n")
+    #;(display "call to no-abstract-methods\n")
     (or (null? methods)
         (and (memq 'abstract (method-record-modifiers (car methods)))
              (let ((method (find-member (car methods) members level type-recs))
@@ -1478,7 +1479,7 @@
   ;; process-members: (list members) (list method-record) (list string) type-records symbol boolean boolean-> 
   ;;                     (values (list field-record) (list method-record) (list inner-record))
   (define (process-members members inherited-methods cname type-recs level iface? test? . args)
-    (display "call to process-members\n")
+    #;(display "call to process-members\n")
     (let loop ((members members)
                (fields null)
                (methods null)
@@ -1511,7 +1512,7 @@
   
   ;; process-field: field (string list) type-records symbol -> field-record
   (define (process-field field cname type-recs level)
-    (display "call to process-field\n")
+    #;(display "call to process-field\n")
     (set-field-type! field (type-spec-to-type (field-type-spec field) cname level type-recs))
     (make-field-record (id-string (field-name field)) 
                        (check-field-modifiers level (field-modifiers field))
@@ -1521,7 +1522,7 @@
                   
   ;; process-method: method (list method-record) (list string) type-records symbol boolean boolean -> method-record  
   (define (process-method method inherited-methods cname type-recs level iface? test? . args)
-    (display "call to process-method\n")
+    #;(display "call to process-method\n")
     (let* ((name (id-string (method-name method)))
            (parms (map (lambda (p)
                          (set-field-type! p (type-spec-to-type (field-type-spec p) cname level type-recs))
