@@ -1,6 +1,6 @@
 (module build-info scheme/base
   
-  (require scheme/class scheme/path 
+  (require scheme/class scheme/path racket/match
            "ast.ss" "types.ss" "error-messaging.ss" "parameters.ss" 
            "restrictions.ss" "parser.ss" "profj-pref.ss")
 
@@ -558,7 +558,7 @@
                                      (method-record-modifiers m2))))
                (over-riden? m (cdr listm))))))
 
-  (define (print-some-shit x)
+  (define (print-stuff x)
     (if (null? x)
         '()
         (begin
@@ -567,47 +567,77 @@
            [(field? (car x))
              (begin #;(set-id-string! (name-id (type-spec-name (field-type-spec (car x)))) "Object")
                     #;(display (name-id (type-spec-name (field-type-spec (car x)))))
-                    (print-some-shit (cdr x)))]
+                    (print-stuff (cdr x)))]
            [(method? (car x)) (begin (display (car x))
-                                    (print-some-shit (cdr x)))]
+                                    (print-stuff (cdr x)))]
            #;(display (field-type-spec (car x)))
-           [else (print-some-shit (cdr x))]))))
-
-  (define (get-type-id type-obj)
-    (name-id (type-spec-name type-obj)))
-  
-  (define (get-field-id field)
-    (get-type-id (field-type-spec field)))
-
-  (define (get-return-id method)
-    (get-type-id (method-type method)))
-
-  (define (get-parm-id parm)
-    (get-type-id (var-decl-type-spec parm)))
-
-  (define (has-return-type? method)
-    (name? (type-spec-name (method-type method))))
+           [else (print-stuff (cdr x))]))))
 
   ;; 1.5 replace generic class declaration instances of parametric parameters with
   ;; Object type
+
+    (define (field-type-spec-name-id-string v) (id-string (name-id (type-spec-name (var-decl-type-spec (if (var-init? v) (var-init-var-decl v) v))))))
+  (define (set-field-type-spec-name-id-string! v id) (set-id-string! (name-id (type-spec-name (var-decl-type-spec (if (var-init? v) (var-init-var-decl v) v)))) id))
+
+  (define (replace-var-decl-init v type)
+    (when (equal? (field-type-spec-name-id-string v)
+                  type)
+      (set-field-type-spec-name-id-string! v "Object")))
+  
   (define (generic-to-object members type)
     (unless (null? members)
-      (let ((member (car members)))
-        (cond
-          [(field? member) (when (equal? (id-string (get-field-id member)) type)
-                             (set-id-string! (get-field-id member) "Object"))
-                           (generic-to-object (cdr members) type)]
-          [(method? member) (when (and (has-return-type? member)
-                                              (equal? (id-string (get-return-id member)) type))
-                              (set-id-string! (get-return-id  member) "Object"))                                   
-                            (let ((parms (method-parms member)))
-                              (unless (null? parms)
-                                (for-each (λ (parm)
-                                            (when (equal? (id-string (get-parm-id parm)) type)
-                                              (set-id-string! (get-parm-id  parm) "Object")))
-                                          parms)))
-                            (generic-to-object (cdr members) type)]
-          [else (generic-to-object (cdr members) type)]))))
+      (for-each (λ (member)
+                  (cond
+                    [(field? member) (replace-var-decl-init member type)]
+                    ;; Handle the return type
+                    [(method? member) (when (and (has-return-type? member)
+                                                 (equal? (field-type-spec-name-id-string member) type))
+                                        (set-field-type-spec-name-id-string! member "Object"))
+                                      ;; Handle typed parameters
+                                      (let ((parms (method-parms member)))
+                                        (unless (null? parms)
+                                          (for-each (λ (parm)
+                                                      (when (equal? (field-type-spec-name-id-string parm) type)
+                                                        (set-field-type-spec-name-id-string! parm "Object")))
+                                                    parms)))
+                                      ;; Handle the body
+                                      (handle-body (method-body member) type)]
+                    [else (void)]))
+                members)))
+
+
+  (define (handle-body stmt type)
+    (match stmt
+      [(ifS cond then els key-src src) (handle-body then type)
+                                       (handle-body els type)]
+      [(while cond loop src) (handle-body loop type)]
+      [(doS loop cond src) (handle-body loop type)]
+      ;; handle for init var-decl-init
+      [(for init cond incr loop src) (handle-body loop type)
+                                     (for-each (λ (i)
+                                                 (unless (statement-expression? i)
+                                                   (replace-var-decl-init i type)))
+                                               init)]
+      [(try body catches finally key-src src) (when (statement? finally)
+                                                  (handle-body finally type))]
+      [(catch cond body src) (handle-body body type)
+                             (replace-var-decl-init cond type)]
+      ;; handle cases
+      [(switch expr cases src) (for-each (λ (case)
+                                           (handle-body case type))
+                                         cases)]
+      [(caseS constant body src) (handle-list-stmt-var-decl-init body type)]
+      [(block stmts src) (handle-list-stmt-var-decl-init stmts type)]
+      [(label label stmt src) (handle-body stmt type)]
+      [(synchronized expr stmt src) (handle-body stmt type)]
+      [_ (void)]))
+
+  (define (handle-list-stmt-var-decl-init l type) (void)
+    (for-each (λ (stmt-or-var)
+                (if (statement? stmt-or-var)
+                    (handle-body stmt-or-var type)
+                    (replace-var-decl-init stmt-or-var type)))
+              l))
       
       
       
@@ -684,7 +714,7 @@
                      (extension-error 'implement-class (header-id info) name (name-src name))))
                  
                  (valid-iface-implement? iface-records (header-implements info))
-                 #;(print-some-shit members)
+                 #;(print-stuff members)
                  
                  (let*-values (((old-methods) (class-record-methods super-record))
                                ((f m i)

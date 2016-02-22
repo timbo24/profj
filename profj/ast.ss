@@ -83,6 +83,9 @@
   (define (field-type-spec v) (var-decl-type-spec (if (var-init? v) (var-init-var-decl v) v)))
   (define (field-type v) (var-decl-type (if (var-init? v) (var-init-var-decl v) v)))
   (define (set-field-type! v t) (set-var-decl-type! (if (var-init? v) (var-init-var-decl v) v) t))
+  (define (set-field-type-spec! v t-s) (set-var-decl-type-spec! (if (var-init? v) (var-init-var-decl v) v) t-s))
+  
+  
   (define (field-src v) (var-decl-src (if (var-init? v) (var-init-var-decl v) v)))
   
   ;;(make-var-decl id (list modifier) type-spec (U #f type) src)
