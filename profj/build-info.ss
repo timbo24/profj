@@ -1,4 +1,4 @@
-(module build-info scheme/base
+(module build-info racket
   
   (require scheme/class scheme/path racket/match
            "ast.ss" "types.ss" "error-messaging.ss" "parameters.ss" 
@@ -575,24 +575,48 @@
 
   ;; 1.5 replace generic class declaration instances of parametric parameters with
   ;; Object type
-
-    (define (field-type-spec-name-id-string v) (id-string (name-id (type-spec-name (var-decl-type-spec (if (var-init? v) (var-init-var-decl v) v))))))
+  (define (field-type-spec-name-id-string v) (id-string (name-id (type-spec-name (var-decl-type-spec (if (var-init? v) (var-init-var-decl v) v))))))
   (define (set-field-type-spec-name-id-string! v id) (set-id-string! (name-id (type-spec-name (var-decl-type-spec (if (var-init? v) (var-init-var-decl v) v)))) id))
+
+  (define (has-return-type? method)
+    (name? (type-spec-name (method-type method))))
+
+    (define (get-type-id type-obj)
+      (name-id (type-spec-name type-obj)))
+
+  (define (get-return-id method)
+     (get-type-id (method-type method)))
 
   (define (replace-var-decl-init v type)
     (when (equal? (field-type-spec-name-id-string v)
                   type)
       (set-field-type-spec-name-id-string! v "Object")))
+
+  (define (replace-type-parms class prev-types)
+    (let* [(type-parms (header-type-parms (def-header class)))
+           (members (def-members class))
+           (types `(,@prev-types ,@(if (null? type-parms)
+                                       empty
+                                       (map (λ (type-parm)
+                                              (id-string (name-id (type-spec-name type-parm))))
+                                            type-parms))))]
+      (unless (null? types)
+        (for-each (λ (type)
+                    (generic-to-object members type))
+                  types))))
+    
+    
   
   (define (generic-to-object members type)
     (unless (null? members)
       (for-each (λ (member)
                   (cond
-                    [(field? member) (replace-var-decl-init member type)]
-                    ;; Handle the return type
+                    [(field? member) 
+                                     (replace-var-decl-init member type)]
+                                      ;; Handle the return type
                     [(method? member) (when (and (has-return-type? member)
-                                                 (equal? (field-type-spec-name-id-string member) type))
-                                        (set-field-type-spec-name-id-string! member "Object"))
+                                                 (equal? (id-string (get-return-id member)) type))
+                                        (set-id-string! (get-return-id  member) "Object"))
                                       ;; Handle typed parameters
                                       (let ((parms (method-parms member)))
                                         (unless (null? parms)
@@ -602,6 +626,9 @@
                                                     parms)))
                                       ;; Handle the body
                                       (handle-body (method-body member) type)]
+                    [(initialize? member) (handle-body (initialize-block member type))]
+                    [(class-def? member) (replace-type-parms member `( ,type))]
+                    [(interface-def? member)]
                     [else (void)]))
                 members)))
 
@@ -680,13 +707,7 @@
                                  (cons super-name (map name->list (header-implements info)))))
                       (old-loc (send type-recs get-location)))
                  ;; handling generics 
-                 (unless (null? (header-type-parms (def-header class)))
-                   (let ((types (map (λ (type-parm)
-                                       (id-string (name-id (type-spec-name type-parm))))
-                                     (header-type-parms (def-header class)))))
-                         (for-each (λ (type)
-                                     (generic-to-object members type))
-                                   types)))
+                 (replace-type-parms class empty)
                  (set! reqs
                        (remove-dup-reqs
                         (append (get-method-reqs (class-record-methods super-record))

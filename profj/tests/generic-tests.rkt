@@ -61,7 +61,48 @@
       {
        return field;
       }
-    }" 'full #f "Multiple Genertic Method Parameters")
-  
+    }" 'full #f "Multiple Generic Method Parameters")
+
+
+  (execute-test
+   "public class Test<K, T>
+    {
+       public class Nested<T>
+       {
+         T field;
+       }
+    }" 'full #f "Nested Generic Class")
+
+    #;(execute-test
+   "public class Test<K, T>
+    {
+     public Test(T t) {
+        What<T> w = new What(t);
+    }
+
+    public class What<S> {
+        public What(T t) {
+            field = t;
+        }
+
+        T field;
+    }
+    }" 'full #f "Nested Generic Complex Class")
+
+  (execute-test
+   "public class Test
+    {
+     public class What {
+        int field;
+        public What(int t) {
+            field = t;
+        }
+    }
+     public Test(int t) {
+        What w = new What(t);
+    }
+    }" 'full #f "Nested Generic Complex Class")
+  ;; TODO
+  ;; handle initialize, nested class-def, interface-def
   
   (report-test-results))
