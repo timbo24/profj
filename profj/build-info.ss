@@ -606,7 +606,7 @@
                   types))))
     
     
-  
+
   (define (generic-to-object members type)
     (unless (null? members)
       (for-each (λ (member)
@@ -627,6 +627,7 @@
                                       ;; Handle the body
                                       (handle-body (method-body member) type)]
                     [(initialize? member) (handle-body (initialize-block member type))]
+                    ;; This should work but the translator doesn't currently support static nested classes
                     [(class-def? member) (replace-type-parms member `( ,type))]
                     [(interface-def? member)]
                     [else (void)]))

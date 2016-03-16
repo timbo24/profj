@@ -826,9 +826,9 @@
       
       (ClassInstanceCreationExpression
        [(new ClassOrInterfaceType O_PAREN ArgumentList C_PAREN)
-        (make-class-alloc #f (build-src 5) $2 (reverse $4) #f #f #f)]
+        (make-class-alloc #f (build-src 5) $2 (reverse $4) null #f #f #f)]
        [(new ClassOrInterfaceType O_PAREN C_PAREN) 
-        (make-class-alloc #f (build-src 4) $2 null #f #f #f)]
+        (make-class-alloc #f (build-src 4) $2 null null #f #f #f)]
        ;; 1.1
        [(new ClassOrInterfaceType O_PAREN ArgumentList C_PAREN ClassBody)
         (make-anon-class-alloc (build-src 5)
@@ -870,10 +870,10 @@
 
        ;; 1.5
        [(new ClassOrInterfaceType O_A_BRACKET TypeList C_A_BRACKET O_PAREN ArgumentList C_PAREN)
-        (make-class-alloc #f (build-src 8) $2 (reverse $7) #f #f #f)]
+        (make-class-alloc #f (build-src 8) $2 (reverse $7) $4 #f #f #f)]
        
        [(new ClassOrInterfaceType O_A_BRACKET TypeList C_A_BRACKET O_PAREN C_PAREN) 
-        (make-class-alloc #f (build-src 7) $2 null #f #f #f)]
+        (make-class-alloc #f (build-src 7) $2 null $4 #f #f #f)]
        ;; 1.5
        #;[(new ClassOrInterfaceType O_A_BRACKET ArgumentList C_A_BRACKET O_PAREN ArgumentList C_PAREN ClassBody)
         (make-anon-class-alloc (build-src 5)
@@ -1224,6 +1224,7 @@
                                         (file-path)
                                         'full
                                         null 'anon null)
+                        null
                         (reverse args) #t #f #t)))
   
   (define parse-full (car parsers))

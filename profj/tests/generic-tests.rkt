@@ -73,6 +73,17 @@
        }
     }" 'full #f "Nested Generic Class")
 
+  #;(execute-test
+   "public class Test<K>
+    {
+       public static int field = initField();
+
+       private static int initField() {
+         K hello;
+         return 1;
+       }
+    }" 'full #f "Initialize Block")
+
     #;(execute-test
    "public class Test<K, T>
     {
@@ -89,7 +100,7 @@
     }
     }" 'full #f "Nested Generic Complex Class")
 
-  (execute-test
+  #;(execute-test
    "public class Test
     {
      public class What {
