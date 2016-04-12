@@ -26,7 +26,6 @@
   (define-struct ref-type (class/iface path) #:transparent)
   (define-struct array-type (type dim))
   
-  
   (define object-type (make-ref-type "Object" `("java" "lang")))
   (define string-type (make-ref-type "String" `("java" "lang")))
   (define throw-type (make-ref-type "Throwable" `("java" "lang")))
@@ -767,7 +766,6 @@
            (methods-same (filter (lambda (mr) 
                                    (andmap type=? (m-atypes mr) arg-types))
                                  methods))
-           ;;1.5 maybe it's here, should handle finding the correct method given the signature
            (assignable (filter (lambda (mr)
                                  (andmap a-convert? (m-atypes mr) arg-types))
                                methods))
@@ -784,7 +782,7 @@
         ((null? methods) (arg-count-fail))
         ((= 1 (length methods-same)) (car methods-same))
         ((> (length methods-same) 1) (method-conflict-fail))
-        ((null? assignable) (display "WAHOOOOOOO\n") (no-method-fail))
+        ((null? assignable) (no-method-fail))
         ((= 1 (length assignable)) (car assignable))
         ((= (car (car assignable-count))
             (car (cadr assignable-count))) (method-conflict-fail))
