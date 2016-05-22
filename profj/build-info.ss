@@ -513,10 +513,16 @@
   
   ;;get-parent-record: (list string) name (list string) type-records (list string) -> record
   (define (get-parent-record name n child-name level type-recs)
+    (displayln "get-parent-record")
+    ;(displayln name)
+    ;(displayln n)
+    ;(displayln child-name)
+    ;(displayln level)
+    ;(displayln type-recs)
     (when (equal? name child-name)
       (dependence-error 'immediate (name-id n) (name-src n)))
     (let ((record (send type-recs get-class-record name)))
-      #;(printf "~a, ~a~n" name record)
+      (printf "~n~a, ~a~n~n~n" name record)
       (cond
         ((class-record? record) record)
         ((procedure? record) 
@@ -671,7 +677,7 @@
   
   ;; process-class: class-def (list string) type-records bool bool symbol -> class-record
   (define (process-class class package-name type-recs look-in-table? put-in-table? level)
-    #;(display "call to process-class\n")
+    (display "process-class\n")
     #;(display (header-type-parms (def-header class)))
     (let* ((info (def-header class))
            (cname (cons (id-string (header-id info)) package-name)))
@@ -706,6 +712,14 @@
                                        (make-req (car name-list) (cdr name-list))))
                                  (cons super-name (map name->list (header-implements info)))))
                       (old-loc (send type-recs get-location)))
+                 ;(displayln "class")
+                 ;(displayln class)
+                 ;(displayln "\nsuper")
+                 ;(displayln super)
+                 ;(displayln "\nsuper-name")
+                 ;(displayln super-name)
+                 ;(displayln "\nsuper-record")
+                 ;(displayln super-record)
                  ;; handling generics 
                  (replace-type-parms class empty)
                  (set! reqs

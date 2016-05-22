@@ -6,6 +6,7 @@
    mzlib/pretty
    mzlib/list
    scheme/class
+   racket/match
    "ast.ss")
   
   (provide (except-out (all-defined-out)
@@ -160,9 +161,42 @@
        (or (type=? object-type to)
            (type=? cloneable-type to)
            (type=? serializable-type to)
-           (and (array-type? to) (= (array-type-dim from) (array-type-dim to))
+           (and (array-type? to)
+                (= (array-type-dim from) (array-type-dim to))
                 (assignment-conversion (array-type-type to) (array-type-type from) type-recs))))
       (else #f)))
+
+  ;; Disclaimer: these seem like temporary fixes, need to inject conversions of the form
+  ;; Integer I = 4; => Integer I = new Integer(4);
+  ;; 5.1.7 Boxing Conversions
+  ;;
+  (define (boxing-conversion to from type-recs)
+    (cond
+      [(symbol=? from 'boolean) (assignment-conversion to (make-ref-type "Boolean" `("java" "lang")) type-recs)]
+      [(symbol=? from 'byte)    (assignment-conversion to (make-ref-type "Byte" `("java" "lang")) type-recs)]
+      [(symbol=? from 'short)   (assignment-conversion to (make-ref-type "Short" `("java" "lang")) type-recs)]
+      [(symbol=? from 'char)    (assignment-conversion to (make-ref-type "Character" `("java" "lang")) type-recs)]
+      [(symbol=? from 'int)     (assignment-conversion to (make-ref-type "Integer" `("java" "lang")) type-recs)]
+      [(symbol=? from 'long)    (assignment-conversion to (make-ref-type "Long" `("java" "lang")) type-recs)]
+      [(symbol=? from 'float)   (assignment-conversion to (make-ref-type "Float" `("java" "lang")) type-recs)]
+      [(symbol=? from 'double)  (assignment-conversion to (make-ref-type "Double" `("java" "lang")) type-recs)]
+      [else #f]))
+
+  ;; 5.1.8 Unboxing Conversions
+  (define (unboxing-conversion to from type-recs)
+    (if (ref-type? from)
+        (match (ref-type-class/iface from)
+          ["Boolean" (assignment-conversion to 'boolean type-recs)]
+          ["Byte" (assignment-conversion to 'byte type-recs)]
+          ["Short" (assignment-conversion to 'short type-recs)]
+          ["Character" (assignment-conversion to 'char type-recs)]
+          ["Integer" (assignment-conversion to 'int type-recs)]
+          ["Long" (assignment-conversion to 'long type-recs)]
+          ["Float" (assignment-conversion to 'float type-recs)]
+          ["Double" (assignment-conversion to 'double type-recs)]
+          [else #f])
+        #f))
+      
   
   ;; 5.2
   ;; SKIP - possible narrowing conversion for constants
@@ -177,10 +211,16 @@
        (cond
          ((dynamic-val-type from) => (lambda (t) (assignment-conversion to t type-recs)))
          (else (set-dynamic-val-type! from to) #t)))
-      ((eq? to 'dynamic) #t)
-      ((type=? to from) #t)
+      ((eq? to 'dynamic)
+       #t)
+      ((type=? to from)
+       #t)
       ((and (prim-numeric-type? to) (prim-numeric-type? from))
        (widening-prim-conversion to from))
+      ((prim-numeric-type? from)
+       (boxing-conversion to from type-recs))
+      ((prim-numeric-type? to)
+       (unboxing-conversion to from type-recs))
       (else
        (widening-ref-conversion to from type-recs))))
   
